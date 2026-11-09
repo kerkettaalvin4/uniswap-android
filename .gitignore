@@ -1,0 +1,28 @@
+# Android / Gradle
+.gradle/
+**/build/
+/outputs/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+externalNativeBuild/
+cmake-build-*/
+/work/
+
+# Firebase configuration (download locally; do not commit)
+app/google-services.json
+google-services.json
+firebase-debug.log
+firebase-debug.*.log
+
+# Signing credentials
+*.jks
+*.keystore
+keystore.properties
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

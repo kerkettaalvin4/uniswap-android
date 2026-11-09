@@ -110,4 +110,3 @@ Keep this entry truthful: add emulator/device testing details and screenshots af
 - Contact starts an email draft; negotiation and payment happen outside the app.
 - There is no image upload, chat, payment, or moderation backend in this first release.
 - Firebase setup and a real-device/emulator smoke test are required before calling the app verified or publishing screenshots.
-

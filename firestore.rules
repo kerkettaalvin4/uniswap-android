@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    match /listings/{listingId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll([
+          'title', 'description', 'category', 'price', 'condition',
+          'sellerId', 'sellerName', 'sellerEmail', 'collegeName', 'createdAt', 'status'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title', 'description', 'category', 'price', 'condition',
+          'sellerId', 'sellerName', 'sellerEmail', 'collegeName', 'createdAt', 'status'
+        ])
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.category in ['Textbooks', 'Electronics', 'Dorm', 'Supplies', 'Other']
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0
+        && request.resource.data.condition in ['Like new', 'Good', 'Fair', 'For parts']
+        && request.resource.data.sellerName is string
+        && request.resource.data.sellerName.size() <= 80
+        && request.resource.data.sellerEmail == request.auth.token.email
+        && request.resource.data.collegeName is string
+        && request.resource.data.collegeName.size() >= 3
+        && request.resource.data.collegeName.size() <= 120
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'available';
+      allow update: if signedIn()
+        && resource.data.sellerId == request.auth.uid
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'sold';
+      allow delete: if signedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasAll(['displayName', 'email', 'collegeName', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'collegeName', 'createdAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.collegeName is string
+        && request.resource.data.collegeName.size() >= 3
+        && request.resource.data.collegeName.size() <= 120
+        && request.resource.data.createdAt is int;
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'collegeName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.collegeName is string
+        && request.resource.data.collegeName.size() >= 3
+        && request.resource.data.collegeName.size() <= 120;
+      allow delete: if isOwner(uid);
+
+      match /saved/{listingId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['savedAt'])
+          && request.resource.data.savedAt is int
+          && exists(/databases/$(database)/documents/listings/$(listingId));
+        allow delete: if isOwner(uid);
+        allow update: if false;
+      }
+    }
+  }
+}
